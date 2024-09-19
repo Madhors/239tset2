@@ -1,40 +1,34 @@
-import { useEffect, useState } from "react";
-import type { Schema } from "../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
+import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
+import { Amplify } from 'aws-amplify';
+import '@aws-amplify/ui-react/styles.css';
+import outputs from "../amplify_outputs.json";
 
-const client = generateClient<Schema>();
+Amplify.configure(outputs);
 
-function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
-
-  useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
-
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
-  }
+export default function App() {
+  const { authStatus } = useAuthenticator(context => [context.authStatus]);
 
   return (
-    <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
-        ))}
-      </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-          Review next step of this tutorial.
-        </a>
-      </div>
-    </main>
+    <div>
+      <p>Authentication Status: {authStatus}</p>
+      {authStatus === 'configuring' && 'Loading...'}
+      {authStatus !== 'authenticated' ? (
+        <Authenticator />
+      ) : (
+        <Home />
+      )}
+    </div>
   );
 }
 
-export default App;
+const Home = () => {
+  const { signOut } = useAuthenticator(context => [context.user, context.signOut]);
+
+  return (
+    <div>
+      <h1>Welcome to the Home page!</h1>
+      {/* Add your home page content here */}
+      <button onClick={signOut}>Sign Out</button>
+    </div>
+  );
+};
